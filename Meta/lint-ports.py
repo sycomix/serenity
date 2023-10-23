@@ -48,7 +48,7 @@ def read_port_table(filename):
     with open(filename, 'r') as fp:
         matches = PORT_TABLE_REGEX.findall(fp.read())
         for match in matches:
-            line_len = sum([len(part) for part in match])
+            line_len = sum(len(part) for part in match)
             ports[match[0]] = {
                 "dir_ref": match[1],
                 "name": match[2].strip(),
@@ -75,7 +75,7 @@ def read_port_dirs():
             print(f"Ports/{entry} is neither a port (not a directory) nor an ignored file?!")
             all_good = False
             continue
-        if not os.path.exists(entry + '/package.sh'):
+        if not os.path.exists(f'{entry}/package.sh'):
             print(f"Ports/{entry}/ is missing its package.sh?!")
             all_good = False
             continue
@@ -98,14 +98,13 @@ def get_port_properties(port):
     res = subprocess.run(f"cd {port}; exec {package_sh_command}", shell=True, capture_output=True)
     if res.returncode == 0:
         results = res.stdout.decode('utf-8').split('\n\n')
-        props = {prop: results[i].strip() for i, prop in enumerate(PORT_PROPERTIES)}
+        return {prop: results[i].strip() for i, prop in enumerate(PORT_PROPERTIES)}
     else:
         print((
             f'Executing "{package_sh_command}" script for port {port} failed with '
             f'exit code {res.returncode}, output from stderr:\n{res.stderr.decode("utf-8").strip()}'
         ))
-        props = {x: '' for x in PORT_PROPERTIES}
-    return props
+        return {x: '' for x in PORT_PROPERTIES}
 
 
 def check_package_files(ports):
@@ -129,7 +128,7 @@ def check_package_files(ports):
             print(f"Ports/{port} should use '{port}' for 'port' but is using '{props['port']}' instead")
             all_good = False
 
-        if not props['auth_type'] in ('sha256', 'sig', ''):
+        if props['auth_type'] not in ('sha256', 'sig', ''):
             print(f"Ports/{port} uses invalid signature algorithm '{props['auth_type']}' for 'auth_type'")
             all_good = False
 
@@ -223,11 +222,10 @@ def check_descriptions_for_port_patches(patches):
             for line in f:
                 if not line.startswith('#'):
                     continue
-                match = PORT_NAME_REGEX.search(line)
-                if match:
+                if match := PORT_NAME_REGEX.search(line):
                     readme_contents.append(match.group(1))
 
-        patch_names = set(Path(x).stem for x in patch_files)
+        patch_names = {Path(x).stem for x in patch_files}
 
         for patch_name in patch_names:
             if patch_name not in readme_contents:
@@ -259,8 +257,7 @@ def try_parse_git_patch(path_to_patch):
             return None
 
         message = message_file.read().decode('utf-8')
-        subject = GIT_PATCH_SUBJECT_RE.search(res.stdout.decode("utf-8"))
-        if subject:
+        if subject := GIT_PATCH_SUBJECT_RE.search(res.stdout.decode("utf-8")):
             message = subject.group(1) + "\n" + message
 
         return message
@@ -325,7 +322,7 @@ def check_available_ports(from_table, ports):
         actual_version = from_table[port]["version"]
         expected_version = ports[port]["version"]
         if GIT_HASH_REGEX.match(expected_version):
-            expected_version = expected_version[0:7]
+            expected_version = expected_version[:7]
         if expected_version == "git":
             expected_version = ""
         if actual_version != expected_version:

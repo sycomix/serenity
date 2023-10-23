@@ -63,6 +63,6 @@ def any_problems_here():
 
 
 if __name__ == '__main__':
-    os.chdir(os.path.dirname(__file__) + "/../Base/res/emoji/")
+    os.chdir(f"{os.path.dirname(__file__)}/../Base/res/emoji/")
     if any_problems_here():
         sys.exit(1)

@@ -86,10 +86,7 @@ def find_corresponding_source_file(filename):
 
 
 def startswith_any(string, prefixes):
-    for prefix in prefixes:
-        if string.startswith(prefix):
-            return True
-    return False
+    return any(string.startswith(prefix) for prefix in prefixes)
 
 
 def Settings(**kwargs):

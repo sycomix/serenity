@@ -22,9 +22,7 @@ def should_check_file(filename):
         return False
     if filename == 'Kernel/FileSystem/Ext2FS/Definitions.h':
         return False
-    if filename.endswith('.txt'):
-        return 'CMake' in filename
-    return True
+    return 'CMake' in filename if filename.endswith('.txt') else True
 
 
 def find_files_here_or_argv():
@@ -73,5 +71,5 @@ def run():
 
 
 if __name__ == '__main__':
-    os.chdir(os.path.dirname(__file__) + "/..")
+    os.chdir(f"{os.path.dirname(__file__)}/..")
     run()

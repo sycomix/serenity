@@ -18,7 +18,9 @@ def get_headers_here():
     assert result.stderr == ''
     output = result.stdout.split('\n')
     assert output[-1] == ''  # Trailing newline
-    assert len(output) > 500, 'There should be well over a thousand headers, not only {}?!'.format(len(output))
+    assert (
+        len(output) > 500
+    ), f'There should be well over a thousand headers, not only {len(output)}?!'
     return output[:-1]
 
 
@@ -65,6 +67,8 @@ if __name__ == '__main__':
     if len(sys.argv) == 2:
         run(os.environ['SERENITY_SOURCE_DIR'], sys.argv[1])
     else:
-        print('Usage: SERENITY_SOURCE_DIR=/path/to/serenity {} SERENITY_BUILD_ARCH'
-              .format(sys.argv[0]), file=sys.stderr)
+        print(
+            f'Usage: SERENITY_SOURCE_DIR=/path/to/serenity {sys.argv[0]} SERENITY_BUILD_ARCH',
+            file=sys.stderr,
+        )
         exit(1)

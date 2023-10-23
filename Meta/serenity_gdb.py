@@ -24,22 +24,20 @@ def handler_class_for_type(type, re=re.compile('^([^<]+)(<.*>)?$')):
         return AKDistinctNumeric
     elif klass == 'AK::HashMap':
         return AKHashMapPrettyPrinter
-    elif klass == 'AK::RefCounted':
-        return AKRefCounted
-    elif klass == 'AK::RefPtr':
-        return AKRefPtr
     elif klass == 'AK::OwnPtr':
         return AKOwnPtr
-    elif klass == 'AK::NonnullRefPtr':
+    elif klass == 'AK::RefCounted':
+        return AKRefCounted
+    elif klass in ['AK::RefPtr', 'AK::NonnullRefPtr']:
         return AKRefPtr
     elif klass == 'AK::SinglyLinkedList':
         return AKSinglyLinkedList
     elif klass == 'AK::String':
         return AKString
-    elif klass == 'AK::StringView':
-        return AKStringView
     elif klass == 'AK::StringImpl':
         return AKStringImpl
+    elif klass == 'AK::StringView':
+        return AKStringView
     elif klass == 'AK::Variant':
         return AKVariant
     elif klass == 'AK::Vector':
@@ -82,8 +80,7 @@ class AKDistinctNumeric:
         parts = actual_name.name.split("::")
         unqualified_name = re.sub(r'__(\w+)_tag', r'\1', actual_name.name)
         if unqualified_name != actual_name.name:
-            qualified_name = '::'.join(parts[:-2] + [unqualified_name])
-            return qualified_name
+            return '::'.join(parts[:-2] + [unqualified_name])
         # If the tag is malformed, just print DistinctNumeric<T>
         contained_type = type.template_argument(0)
         return f'AK::DistinctNumeric<{handler_class_for_type(contained_type).prettyprint_type(contained_type)}>'
@@ -109,9 +106,8 @@ class AKString:
     def to_string(self):
         if int(self.val["m_impl"]["m_ptr"]) == 0:
             return '""'
-        else:
-            impl = AKRefPtr(self.val["m_impl"]).get_pointee().dereference()
-            return AKStringImpl(impl).to_string()
+        impl = AKRefPtr(self.val["m_impl"]).get_pointee().dereference()
+        return AKStringImpl(impl).to_string()
 
     @classmethod
     def prettyprint_type(cls, type):
@@ -125,10 +121,9 @@ class AKStringView:
     def to_string(self):
         if int(self.val["m_length"]) == 0:
             return '""'
-        else:
-            characters = self.val["m_characters"]
-            str_type = characters.type.target().array(self.val["m_length"]).pointer()
-            return str(characters.cast(str_type).dereference())
+        characters = self.val["m_characters"]
+        str_type = characters.type.target().array(self.val["m_length"]).pointer()
+        return str(characters.cast(str_type).dereference())
 
     @classmethod
     def prettyprint_type(cls, type):
@@ -149,9 +144,8 @@ class AKStringImpl:
     def to_string(self):
         if int(self.val["m_length"]) == 0:
             return '""'
-        else:
-            str_type = gdb.lookup_type("char").array(self.val["m_length"])
-            return get_field_unalloced(self.val, "m_inline_buffer", str_type)
+        str_type = gdb.lookup_type("char").array(self.val["m_length"])
+        return get_field_unalloced(self.val, "m_inline_buffer", str_type)
 
     @classmethod
     def prettyprint_type(cls, type):
@@ -320,8 +314,10 @@ class AKHashMapPrettyPrinter:
 
     @classmethod
     def prettyprint_type(cls, type):
-        template_types = list(type.template_argument(i) for i in (0, 1))
-        key, value = list(handler_class_for_type(t).prettyprint_type(t) for t in template_types)
+        template_types = [type.template_argument(i) for i in (0, 1)]
+        key, value = [
+            handler_class_for_type(t).prettyprint_type(t) for t in template_types
+        ]
         return f'AK::HashMap<{key}, {value}>'
 
 
@@ -367,9 +363,7 @@ class SerenityPrettyPrinterLocator(gdb.printing.PrettyPrinter):
     def __call__(self, val):
         type = gdb.types.get_basic_type(val.type)
         handler = handler_class_for_type(type)
-        if handler is UnhandledType:
-            return None
-        return handler(val)
+        return None if handler is UnhandledType else handler(val)
 
 
 gdb.printing.register_pretty_printer(None, SerenityPrettyPrinterLocator(), replace=True)
@@ -407,11 +401,10 @@ class FindThreadCmd(gdb.Command):
             gdb.write("Argument required (TID).\n")
             return
         tid = int(argv[0])
-        thread = self._find_thread(tid)
-        if not thread:
-            gdb.write(f"No thread with TID {tid} found.\n")
-        else:
+        if thread := self._find_thread(tid):
             gdb.write(f"{thread}\n")
+        else:
+            gdb.write(f"No thread with TID {tid} found.\n")
 
 
 FindThreadCmd()

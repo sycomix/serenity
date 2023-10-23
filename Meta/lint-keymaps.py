@@ -18,7 +18,7 @@ def report(filename, problem):
         filename (str): keymap filename
         problem (str): problem message
     """
-    print('{}: {}'.format(filename, problem))
+    print(f'{filename}: {problem}')
 
 
 def validate_single_map(filename, mapname, values):
@@ -36,24 +36,30 @@ def validate_single_map(filename, mapname, values):
     all_good = True
 
     if not isinstance(values, list):
-        report(filename, '"{}" is not an array'.format(mapname))
+        report(filename, f'"{mapname}" is not an array')
         return False  # Cannot continue other checks
 
     if not any(values):
-        report(filename, 'no values set in {}'.format(mapname))
+        report(filename, f'no values set in {mapname}')
         all_good = False
 
     for i, c in enumerate(values):
         if len(c) > 1:
-            report(filename, 'more than one character ("{}") for charmap index {} of {}'.format(c, i, mapname))
+            report(
+                filename,
+                f'more than one character ("{c}") for charmap index {i} of {mapname}',
+            )
             all_good = False
 
     if len(values) == 0:
-        report(filename, 'map {} is empty.'.format(mapname))
+        report(filename, f'map {mapname} is empty.')
         all_good = False
 
     if len(values) not in GOOD_MAP_LENGTHS:
-        report(filename, 'length {} of map {} is suspicious. Off-by-one?'.format(len(values), mapname))
+        report(
+            filename,
+            f'length {len(values)} of map {mapname} is suspicious. Off-by-one?',
+        )
         all_good = False
 
     return all_good
@@ -78,14 +84,14 @@ def validate_fullmap(filename, fullmap):
 
     for name, map_ in fullmap.items():
         if name not in PERMITTED_MAPS:
-            report(filename, 'contains unknown entry {}'.format(name))
+            report(filename, f'contains unknown entry {name}')
             all_good = False
 
         all_good &= validate_single_map(filename, name, map_)
 
     for name in REQUIRED_MAPS:
         if name not in fullmap:
-            report(filename, 'map {} is missing'.format(name))
+            report(filename, f'map {name} is missing')
             all_good = False
 
     if 'altgr_map' in fullmap and 'alt_map' in fullmap and fullmap['altgr_map'] == fullmap['alt_map']:
@@ -118,7 +124,7 @@ def run_with(filenames):
         if validate_fullmap(filename, fullmap):
             passed += 1
 
-    print('{} out of {} keymaps passed.'.format(passed, len(filenames)))
+    print(f'{passed} out of {len(filenames)} keymaps passed.')
     return passed == len(filenames)
 
 
@@ -152,6 +158,6 @@ def run_here():
 
 
 if __name__ == '__main__':
-    os.chdir(os.path.dirname(__file__) + "/../Base/res/keymaps/")
+    os.chdir(f"{os.path.dirname(__file__)}/../Base/res/keymaps/")
     if not run_here():
         sys.exit(1)
